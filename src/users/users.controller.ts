@@ -7,19 +7,26 @@ import {
   UseGuards,
   Request,
   ForbiddenException,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { UserDTO, UserSignUpDTO } from './dto/create-user.dto';
+import { UserSignUpDTO } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { genSalt, hash } from 'bcryptjs';
-import { ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { ApiQuery, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Role } from './entities/user.entity';
 import { User } from '@prisma/client';
-import { Paginate, PaginateQuery } from 'nestjs-paginate';
+import {
+  PaginationOptions,
+  PaginationResult,
+} from 'src/common/utils/pagination';
+import { UserDTO } from './dto/user.dto';
+import { Serialize } from 'src/interceptors/serialize.iterceptor';
 
 @ApiTags('user')
 @Controller('users')
+@Serialize(UserDTO)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -60,7 +67,21 @@ export class UsersController {
   }
 
   @Get()
-  async getUsers(@Paginate() query: PaginateQuery) {
-    return this.usersService.findUsers(query);
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+  })
+  async getUsers(
+    @Query() query: PaginationOptions,
+  ): Promise<PaginationResult<UserDTO>> {
+    return this.usersService.findAll(query);
   }
 }

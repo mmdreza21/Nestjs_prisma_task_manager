@@ -5,11 +5,16 @@ import {
 } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import { ObjectId } from 'bson';
-import { Paginated, PaginateQuery } from 'nestjs-paginate';
+
 import { PrismaService } from 'src/prisma/prismaService';
 
 // Import the Prisma-specific paginate function
-import { paginate } from 'nestjs-paginate';
+import {
+  paginatePrisma,
+  PaginationOptions,
+  PaginationResult,
+} from '../common/utils/pagination';
+import { UserDTO } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
@@ -30,19 +35,8 @@ export class UsersService {
     });
   }
 
-  async findAll(page = 1, limit = 10) {
-      const [users, meta] = await this.prisma.client.user
-      .paginate()
-      .withPages({
-        limit: 10,
-        page: 1,
-        includePageCount: true,
-      });
-
-    return {
-      users,
-      meta,
-    };
+  async findAll(query: PaginationOptions): Promise<PaginationResult<UserDTO>> {
+    return paginatePrisma(this.prisma.user, query, {});
   }
 
   async findOneUser(key: string, value: string | ObjectId): Promise<User> {

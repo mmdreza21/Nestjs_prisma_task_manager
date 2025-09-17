@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ObjectId } from 'bson';
 import {
   IsEmail,
   IsNotEmpty,
@@ -62,16 +61,4 @@ export class UserSignUpDTO {
   password: string;
 
   role?: Role;
-}
-
-export class UserDTO {
-  id: string | ObjectId;
-  userName: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  addresses?: Array<string>;
-  createdAt: Date;
-  updatedAt: Date;
 }
