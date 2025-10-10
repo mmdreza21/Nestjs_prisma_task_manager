@@ -5,11 +5,7 @@ export class UserDTO {
   @Expose()
   id: string | ObjectId;
   @Expose()
-  userName: string;
-  @Expose()
-  firstName: string;
-  @Expose()
-  lastName: string;
+  name: string;
   @Expose()
   email: string;
   @Expose()

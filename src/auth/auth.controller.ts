@@ -16,15 +16,15 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
   @ApiResponse({ description: 'you gonna have token' })
-  @Post()
+  @Post('login')
   login(@Body() req: LoginDto): Promise<{ accessToken: string }> {
     return this.authService.LoginDto(req);
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiSecurity('JWT-auth')
-  @Get('login')
+  @Get('me')
   async user(@Request() req) {
-    return req.user;
+    return this.authService.validateUserById(req.user.userId);
   }
 }

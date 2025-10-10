@@ -6,12 +6,10 @@ export enum Role {
 export class UserEntity {
   id: string;
   role: Role;
-  firstName: string;
-  lastName: string;
+  name: string;
   phone: string | null;
   addresses: Array<string>;
   email: string;
-  userName: string;
   createdAt: Date;
   updatedAt: Date;
   password: string;

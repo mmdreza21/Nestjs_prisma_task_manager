@@ -27,9 +27,7 @@ enum Status {
 model User {
   id             String    @id @default(auto()) @map("_id") @db.ObjectId
   role           Role      @default(User)
-  firstName      String
-  lastName       String
-  userName       String
+  name           String
   password       String
   email          String    @unique
   phone          String?

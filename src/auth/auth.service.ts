@@ -25,4 +25,12 @@ export class AuthService {
     }
     return user;
   }
+
+  async validateUserById(userId: string) {
+    const user = await this.userService.findOneUser('id', userId);
+    if (!user) {
+      throw new UnauthorizedException('کاربر یافت نشد');
+    }
+    return user;
+  }
 }

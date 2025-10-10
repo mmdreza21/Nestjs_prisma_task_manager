@@ -17,17 +17,7 @@ export class UserSignUpDTO {
     description: 'your name max:20,min:3',
     default: 'test',
   })
-  firstName: string;
-
-  @IsNotEmpty()
-  @MaxLength(20)
-  @MinLength(3)
-  @ApiProperty({
-    type: String,
-    description: 'lastNAme max:20,min:3',
-    default: 'testing',
-  })
-  lastName: string;
+  name: string;
 
   @IsNotEmpty()
   @IsEmail()
@@ -37,14 +27,6 @@ export class UserSignUpDTO {
     default: 'test',
   })
   email: string;
-
-  @IsNotEmpty()
-  @ApiProperty({
-    type: String,
-    description: 'it`s most be uniq',
-    default: 'test',
-  })
-  userName: string;
 
   @IsNotEmpty()
   @MinLength(6)

@@ -20,7 +20,7 @@ import { UserDTO } from './dto/user.dto';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: Prisma.UserCreateInput) {
+  async create(data: Prisma.UserCreateInput): Promise<User> {
     const oldUser = await this.prisma.user.findUnique({
       where: {
         email: data.email,
