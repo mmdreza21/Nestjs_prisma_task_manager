@@ -13,7 +13,13 @@ import { UsersService } from './users.service';
 import { UserSignUpDTO } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { genSalt, hash } from 'bcryptjs';
-import { ApiQuery, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Role } from './entities/user.entity';
 import { User } from '@prisma/client';
@@ -23,6 +29,7 @@ import {
 } from 'src/common/utils/pagination';
 import { UserDTO } from './dto/user.dto';
 import { Serialize } from 'src/interceptors/serialize.iterceptor';
+import { ChangePasswordDTO } from './dto/change-password-dto';
 
 @ApiTags('user')
 @Controller('users')
@@ -83,5 +90,21 @@ export class UsersController {
     @Query() query: PaginationOptions,
   ): Promise<PaginationResult<UserDTO>> {
     return this.usersService.findAll(query);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'Profile fetched successfully' })
+  async getProfile(@Request() req) {
+    return this.usersService.findOneUser('id', req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  @ApiOperation({ summary: 'Change user password' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  async changePassword(@Request() req, @Body() dto: ChangePasswordDTO) {
+    return this.usersService.changePassword(req.user.userId, dto);
   }
 }

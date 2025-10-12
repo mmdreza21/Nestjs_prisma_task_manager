@@ -30,8 +30,6 @@ model User {
   name           String
   password       String
   email          String    @unique
-  phone          String?
-  addresses      String[]
   resetPassToken String?
   dateOfToken    DateTime?
   createdAt      DateTime  @default(now()) @db.Date()

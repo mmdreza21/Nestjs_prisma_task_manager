@@ -15,6 +15,8 @@ import {
   PaginationResult,
 } from '../common/utils/pagination';
 import { UserDTO } from './dto/user.dto';
+import { compare, hash } from 'bcryptjs';
+import { ChangePasswordDTO } from './dto/change-password-dto';
 
 @Injectable()
 export class UsersService {
@@ -63,5 +65,23 @@ export class UsersService {
 
     if (!user) throw new NotFoundException('کاربر پیدا نشد');
     return user;
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDTO) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) throw new BadRequestException('User not found');
+
+    const isOldPassValid = await compare(dto.oldPassword, user.password);
+    if (!isOldPassValid)
+      throw new BadRequestException('Incorrect old password');
+
+    const hashed = await hash(dto.newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
+
+    return { message: 'Password changed successfully' };
   }
 }
