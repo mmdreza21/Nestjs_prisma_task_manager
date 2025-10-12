@@ -22,7 +22,6 @@ import { ChangeStatusDto, CreateTaskDto } from './dto/taskdto';
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
-  // Get tasks for the logged-in user with optional filters
   @Get()
   @ApiQuery({ name: 'priority', required: false, type: Number, example: 1 })
   @ApiQuery({

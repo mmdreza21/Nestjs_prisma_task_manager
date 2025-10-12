@@ -12,7 +12,6 @@ import {
 import { UsersService } from './users.service';
 import { UserSignUpDTO } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { genSalt, hash } from 'bcryptjs';
 import {
   ApiOperation,
   ApiQuery,
@@ -43,12 +42,9 @@ export class UsersController {
       throw new ForbiddenException(
         'You can`t set the role don`t mass whit me... ',
       );
-    const salt = await genSalt(10);
-    const password = await hash(createUserDto.password, salt);
 
     return this.usersService.create({
       ...createUserDto,
-      password,
       role: 'User',
     });
   }
