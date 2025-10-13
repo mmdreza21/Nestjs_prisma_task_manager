@@ -29,6 +29,10 @@ import {
 import { UserDTO } from './dto/user.dto';
 import { Serialize } from 'src/interceptors/serialize.iterceptor';
 import { ChangePasswordDTO } from './dto/change-password-dto';
+import {
+  SendEmailVerificationDTO,
+  VerifyEmailOtpDTO,
+} from './dto/email-verification.dto';
 
 @ApiTags('user')
 @Controller('users')
@@ -62,6 +66,19 @@ export class UsersController {
 
     return user;
   }
+
+  @Post('send-verification')
+  @ApiOperation({ summary: 'Send email verification OTP' })
+  async sendEmailVerification(@Body() dto: SendEmailVerificationDTO) {
+    return this.usersService.sendEmailVerification(dto.email);
+  }
+
+  @Post('verify-email')
+  @ApiOperation({ summary: 'Verify email OTP' })
+  async verifyEmail(@Body() dto: VerifyEmailOtpDTO) {
+    return await this.usersService.verifyEmailOtp(dto.email, dto.otp);
+  }
+
   @UseGuards(JwtAuthGuard)
   @ApiSecurity('JWT-auth')
   @Patch()
@@ -88,6 +105,7 @@ export class UsersController {
     return this.usersService.findAll(query);
   }
 
+  @ApiSecurity('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   @ApiOperation({ summary: 'Get current user profile' })

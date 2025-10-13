@@ -9,9 +9,6 @@ export class UserDTO {
   @Expose()
   email: string;
   @Expose()
-  phone?: string;
-  @Expose()
-  addresses?: Array<string>;
   createdAt: Date;
   updatedAt: Date;
 }

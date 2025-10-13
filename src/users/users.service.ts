@@ -18,17 +18,19 @@ import { UserDTO } from './dto/user.dto';
 import { compare, genSalt, hash } from 'bcryptjs';
 import { ChangePasswordDTO } from './dto/change-password-dto';
 import { ForgotPasswordDTO, ResetPasswordDTO } from './dto/password-reset.dto';
-import { randomBytes } from 'crypto';
+import { randomInt } from 'crypto';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   async create(data: Prisma.UserCreateInput): Promise<User> {
     const oldUser = await this.prisma.user.findUnique({
-      where: {
-        email: data.email,
-      },
+      where: { email: data.email },
     });
     if (oldUser)
       throw new BadRequestException(
@@ -36,10 +38,74 @@ export class UsersService {
       );
 
     const hashedPassword = await this.hashPassword(data.password);
-
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: { ...data, password: hashedPassword },
     });
+
+    await this.sendEmailVerification(user.email);
+
+    return user;
+  }
+
+  async sendEmailVerification(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (user.isEmailVerified)
+      throw new BadRequestException('Email already verified');
+
+    const otp = randomInt(100000, 999999).toString(); // 6-digit code
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins expiry
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailOtp: otp,
+        emailOtpExpiry: expiry,
+      },
+    });
+
+    await this.mailService.sendEmail(
+      user.email,
+      'کد تأیید ایمیل شما',
+      `
+        <h1>تأیید حساب کاربری</h1>
+        <p>کد تأیید شما: <b>${otp}</b></p>
+        <p>این کد تا ۱۰ دقیقه معتبر است.</p>
+      `,
+    );
+
+    return { message: 'OTP sent successfully' };
+  }
+
+  async verifyEmailOtp(
+    email: string,
+    otp: string,
+  ): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (user.isEmailVerified)
+      throw new BadRequestException('User already verified');
+
+    if (!user.emailOtp || !user.emailOtpExpiry)
+      throw new BadRequestException('OTP not generated');
+
+    if (user.emailOtp !== otp) throw new BadRequestException('Invalid OTP');
+
+    if (user.emailOtpExpiry < new Date())
+      throw new BadRequestException('OTP expired');
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isEmailVerified: true,
+        emailOtp: null,
+        emailOtpExpiry: null,
+      },
+    });
+
+    return { message: 'Email verified successfully' };
   }
 
   async findAll(query: PaginationOptions): Promise<PaginationResult<UserDTO>> {
@@ -54,7 +120,6 @@ export class UsersService {
   }
 
   async userProfile(id) {
-    console.log(id.id);
     return this.prisma.user.findUnique({ where: { id } });
   }
 
@@ -97,18 +162,31 @@ export class UsersService {
 
     if (!user) throw new NotFoundException('User not found');
 
-    // Generate a secure random token
-    const token = randomBytes(32).toString('hex');
-    const dateOfToken = new Date();
+    // Generate a 6-digit OTP
+    const otp = randomInt(100000, 999999).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // valid for 10 mins
 
-    // Save token and timestamp in DB
+    // Save OTP and expiry in DB
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { resetPassToken: token, dateOfToken },
+      data: {
+        resetPassToken: otp,
+        dateOfToken: expiry,
+      },
     });
 
-    // Here you can send the token to user via email
-    return { message: 'Reset password token generated', token }; // return token only for testing
+    // Send email
+    await this.mailService.sendEmail(
+      user.email,
+      'بازیابی رمز عبور',
+      `
+      <h1>بازیابی رمز عبور</h1>
+      <p>کد بازیابی شما: <b>${otp}</b></p>
+      <p>این کد تا ۱۰ دقیقه معتبر است.</p>
+    `,
+    );
+
+    return { message: 'Password reset OTP sent successfully' };
   }
 
   async resetPassword(dto: ResetPasswordDTO) {
@@ -116,14 +194,11 @@ export class UsersService {
       where: { resetPassToken: dto.token },
     });
 
-    if (!user) throw new BadRequestException('Invalid token');
+    if (!user) throw new BadRequestException('Invalid OTP');
 
-    // Optional: check if token expired (e.g., valid for 1 hour)
-    if (
-      user.dateOfToken &&
-      new Date().getTime() - user.dateOfToken.getTime() > 1000 * 60 * 60
-    ) {
-      throw new BadRequestException('Token expired');
+    // Check if token expired
+    if (user.dateOfToken && new Date().getTime() > user.dateOfToken.getTime()) {
+      throw new BadRequestException('OTP expired');
     }
 
     const hashedPassword = await this.hashPassword(dto.newPassword);
