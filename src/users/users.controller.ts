@@ -8,6 +8,7 @@ import {
   Request,
   ForbiddenException,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UserSignUpDTO } from './dto/create-user.dto';
@@ -21,15 +22,14 @@ import {
 import { UserDTO } from './dto/user.dto';
 import { Serialize } from 'src/interceptors/serialize.iterceptor';
 import { ChangePasswordDTO } from './dto/change-password-dto';
-import {
-  SendEmailVerificationDTO,
-  VerifyEmailOtpDTO,
-} from './dto/email-verification.dto';
+import { VerifyEmailOtpDTO } from './dto/email-verification.dto';
 import {
   CommonSwaggerGet,
+  CommonSwaggerGetNoAuth,
   CommonSwaggerPost,
 } from 'src/common/decorators/common-swagger.decorator';
 import { ApiTags } from '@nestjs/swagger';
+import { ForgotPasswordDTO, ResetPasswordDTO } from './dto/password-reset.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -47,6 +47,16 @@ export class UsersController {
       );
     }
     return this.usersService.create({ ...createUserDto, role: Role.User });
+  }
+
+  @Post('send-verification-email')
+  @CommonSwaggerPost({ summary: 'end-verification-email' })
+  async sendVerificationEmail(@Body() body: ForgotPasswordDTO) {
+    if (!body.email) {
+      throw new BadRequestException('Email is required');
+    }
+
+    return this.usersService.sendEmailVerification(body.email);
   }
 
   // -------------------- GET CURRENT USER PROFILE --------------------
@@ -86,15 +96,29 @@ export class UsersController {
   }
 
   // -------------------- EMAIL VERIFICATION --------------------
-  @Post('send-verification')
-  @CommonSwaggerPost({ summary: 'Send email verification OTP' })
-  async sendEmailVerification(@Body() dto: SendEmailVerificationDTO) {
-    return this.usersService.sendEmailVerification(dto.email);
-  }
-
   @Post('verify-email')
   @CommonSwaggerPost({ summary: 'Verify email OTP' })
   async verifyEmail(@Body() dto: VerifyEmailOtpDTO) {
     return this.usersService.verifyEmailOtp(dto.email, dto.otp);
+  }
+
+  @Get('verify')
+  @CommonSwaggerGetNoAuth({ summary: 'verify the user Email' })
+  async verify(@Query('token') token: string) {
+    return this.usersService.verifyEmail(token);
+  }
+
+  // -------------------- FORGOT PASSWORD --------------------
+  @Post('forgot-password')
+  @CommonSwaggerPost({ summary: 'Send OTP to reset password' })
+  async forgotPassword(@Body() dto: ForgotPasswordDTO) {
+    return this.usersService.forgotPassword(dto);
+  }
+
+  // -------------------- RESET PASSWORD --------------------
+  @Post('reset-password')
+  @CommonSwaggerPost({ summary: 'Reset password using OTP' })
+  async resetPassword(@Body() dto: ResetPasswordDTO) {
+    return this.usersService.resetPassword(dto);
   }
 }

@@ -1,33 +1,55 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcryptjs';
 import { UsersService } from 'src/users/users.service';
-import { LoginDto } from './dto/create-auth.dto';
+import { LoginDto } from './dto/login-dto';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private userService: UsersService,
-    private jwtService: JwtService,
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
   ) {}
 
-  async LoginDto(req: LoginDto) {
-    const user = await this.validate(req);
-    return {
-      accessToken: this.jwtService.sign({ userId: user.id, role: user.role }),
-    };
+  // 🧠 Main entry point for login
+  public async login(dto: LoginDto) {
+    const user = await this.validateUserCredentials(dto);
+
+    if (!user.isEmailVerified) {
+      throw new ForbiddenException('لطفاً ابتدا ایمیل خود را تأیید کنید.');
+    }
+
+    const accessToken = this.generateAccessToken(user.id);
+    return { accessToken };
   }
 
-  async validate({ email, password }: LoginDto) {
-    const user = await this.userService.findOneUser('email', email);
+  // 🔍 Checks if credentials are valid
+  private async validateUserCredentials({
+    email,
+    password,
+  }: LoginDto): Promise<User> {
+    const user = await this.usersService.findOneUser('email', email);
+
     if (!user || !(await compare(password, user.password))) {
-      throw new UnauthorizedException('ایمیل یا کلمه عبپور شما اشتباه است');
+      throw new UnauthorizedException('ایمیل یا رمز عبور اشتباه است');
     }
+
     return user;
   }
 
-  async validateUserById(userId: string) {
-    const user = await this.userService.findOneUser('id', userId);
+  // 🔐 Generates JWT token for authenticated user
+  private generateAccessToken(userId: string): string {
+    return this.jwtService.sign({ userId });
+  }
+
+  // 🧩 Used by guards / JWT strategies to fetch user by ID
+  async validateUserById(userId: string): Promise<User> {
+    const user = await this.usersService.findOneUser('id', userId);
     if (!user) {
       throw new UnauthorizedException('کاربر یافت نشد');
     }

@@ -21,6 +21,22 @@ export function CommonSwaggerGet(options?: {
   );
 }
 
+export function CommonSwaggerGetNoAuth(options?: {
+  summary?: string;
+  description?: string;
+}) {
+  return applyDecorators(
+    ApiOperation({
+      summary: options?.summary || 'GET operation',
+      description: options?.description,
+    }),
+    ApiResponse({
+      status: 200,
+      description: options?.description || 'Success',
+    }),
+  );
+}
+
 /**
  * Common Swagger decorator for POST endpoints
  */
