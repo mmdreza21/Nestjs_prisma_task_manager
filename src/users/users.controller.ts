@@ -12,16 +12,8 @@ import {
 import { UsersService } from './users.service';
 import { UserSignUpDTO } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import {
-  ApiOperation,
-  ApiQuery,
-  ApiResponse,
-  ApiSecurity,
-  ApiTags,
-} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Role } from './entities/user.entity';
-import { User } from '@prisma/client';
 import {
   PaginationOptions,
   PaginationResult,
@@ -33,92 +25,76 @@ import {
   SendEmailVerificationDTO,
   VerifyEmailOtpDTO,
 } from './dto/email-verification.dto';
+import {
+  CommonSwaggerGet,
+  CommonSwaggerPost,
+} from 'src/common/decorators/common-swagger.decorator';
+import { ApiTags } from '@nestjs/swagger';
 
-@ApiTags('user')
+@ApiTags('users')
 @Controller('users')
 @Serialize(UserDTO)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  // -------------------- CREATE USER --------------------
   @Post()
-  async create(@Body() createUserDto: UserSignUpDTO) {
-    if (createUserDto.role === Role.AdminOfSite)
+  @CommonSwaggerPost({ summary: 'Create a new user' })
+  async create(@Body() createUserDto: UserSignUpDTO): Promise<UserDTO> {
+    if (createUserDto.role === Role.AdminOfSite) {
       throw new ForbiddenException(
-        'You can`t set the role don`t mass whit me... ',
+        'You cannot set the role to AdminOfSite directly!',
       );
-
-    return this.usersService.create({
-      ...createUserDto,
-      role: 'User',
-    });
+    }
+    return this.usersService.create({ ...createUserDto, role: Role.User });
   }
 
+  // -------------------- GET CURRENT USER PROFILE --------------------
   @UseGuards(JwtAuthGuard)
-  @ApiSecurity('JWT-auth')
-  @ApiResponse({ description: 'user all info' })
   @Get('profile')
-  // @UseInterceptors(MapInterceptor(UserInfo, User, { isArray: false }))
-  async userInfo(@Request() req): Promise<UserDTO> {
-    const user: User = await this.usersService.findOneUser(
-      'id',
-      req.user.userId,
-    );
-
-    return user;
+  @CommonSwaggerGet({ summary: 'Get current user profile' })
+  async getProfile(@Request() req): Promise<UserDTO> {
+    return this.usersService.findOneUser('id', req.user.userId);
   }
 
-  @Post('send-verification')
-  @ApiOperation({ summary: 'Send email verification OTP' })
-  async sendEmailVerification(@Body() dto: SendEmailVerificationDTO) {
-    return this.usersService.sendEmailVerification(dto.email);
-  }
-
-  @Post('verify-email')
-  @ApiOperation({ summary: 'Verify email OTP' })
-  async verifyEmail(@Body() dto: VerifyEmailOtpDTO) {
-    return await this.usersService.verifyEmailOtp(dto.email, dto.otp);
-  }
-
+  // -------------------- UPDATE USER --------------------
   @UseGuards(JwtAuthGuard)
-  @ApiSecurity('JWT-auth')
   @Patch()
-  update(@Request() req, @Body() updateUserDto: UpdateUserDto) {
+  @CommonSwaggerPost({ summary: 'Update current user info' })
+  async update(
+    @Request() req,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<UserDTO> {
     return this.usersService.update({ id: req.user.userId }, updateUserDto);
   }
 
+  // -------------------- GET ALL USERS WITH PAGINATION --------------------
   @Get()
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Items per page',
-  })
+  @CommonSwaggerGet({ summary: 'Get list of users with pagination' })
   async getUsers(
     @Query() query: PaginationOptions,
   ): Promise<PaginationResult<UserDTO>> {
     return this.usersService.findAll(query);
   }
 
-  @ApiSecurity('JWT-auth')
-  @UseGuards(JwtAuthGuard)
-  @Get('profile')
-  @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: 200, description: 'Profile fetched successfully' })
-  async getProfile(@Request() req) {
-    return this.usersService.findOneUser('id', req.user.id);
-  }
-
+  // -------------------- CHANGE PASSWORD --------------------
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
-  @ApiOperation({ summary: 'Change user password' })
-  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @CommonSwaggerPost({ summary: 'Change user password' })
   async changePassword(@Request() req, @Body() dto: ChangePasswordDTO) {
     return this.usersService.changePassword(req.user.userId, dto);
+  }
+
+  // -------------------- EMAIL VERIFICATION --------------------
+  @Post('send-verification')
+  @CommonSwaggerPost({ summary: 'Send email verification OTP' })
+  async sendEmailVerification(@Body() dto: SendEmailVerificationDTO) {
+    return this.usersService.sendEmailVerification(dto.email);
+  }
+
+  @Post('verify-email')
+  @CommonSwaggerPost({ summary: 'Verify email OTP' })
+  async verifyEmail(@Body() dto: VerifyEmailOtpDTO) {
+    return this.usersService.verifyEmailOtp(dto.email, dto.otp);
   }
 }
