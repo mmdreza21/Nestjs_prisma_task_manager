@@ -6,7 +6,7 @@ import {
 import { Prisma, User } from '@prisma/client';
 import { ObjectId } from 'bson';
 
-import { PrismaService } from 'src/prisma/prismaService';
+import { PrismaService } from 'src/prisma/prisma.service';
 import {
   paginatePrisma,
   PaginationOptions,

@@ -6,9 +6,10 @@ import { TaskModule } from './task/task.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { MailModule } from './mail/mail.module';
 import { ChatModule } from './chat/chat.module';
+import { NoteModule } from './note/note.module';
 
 @Module({
-  imports: [UsersModule, AuthModule, TaskModule, PrismaModule, MailModule, ChatModule],
+  imports: [UsersModule, AuthModule, TaskModule, PrismaModule, MailModule, ChatModule, NoteModule],
   controllers: [],
   providers: [],
 })
