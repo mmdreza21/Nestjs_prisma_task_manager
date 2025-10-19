@@ -16,9 +16,12 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:watch:unit": "jest --config jest.config.ts --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": " jest --config ./test/jest-e2e.json ",
+    "test:e2e:watch": "jest --config ./test/jest-e2e.json --watch",
+    "prisma:generate": "prisma-import --schema=prisma/schema.prisma && prisma generate"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
@@ -46,6 +49,7 @@
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
     "prisma-extension-pagination": "^0.7.5",
+    "prisma-import": "^1.0.5",
     "reflect-metadata": "^0.2.2",
     "rimraf": "^6.0.1",
     "rxjs": "^7.8.1",
@@ -56,7 +60,7 @@
   "devDependencies": {
     "@nestjs/cli": "^11.0.10",
     "@nestjs/schematics": "^10.2.3",
-    "@nestjs/testing": "^10.4.15",
+    "@nestjs/testing": "^11.1.6",
     "@types/bcryptjs": "^2.4.6",
     "@types/express": "^5.0.0",
     "@types/jest": "29.5.14",
