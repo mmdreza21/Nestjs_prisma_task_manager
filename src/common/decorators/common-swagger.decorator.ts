@@ -55,3 +55,23 @@ export function CommonSwaggerPost(options?: {
     }),
   );
 }
+
+/**
+ * Common Swagger decorator for POST endpoints
+ */
+export function CommonSwaggerPostWithAuth(options?: {
+  summary?: string;
+  description?: string;
+}) {
+  return applyDecorators(
+    ApiSecurity('JWT-auth'),
+    ApiOperation({
+      summary: options?.summary || 'POST operation',
+      description: options?.description,
+    }),
+    ApiResponse({
+      status: 200,
+      description: options?.description || 'Success',
+    }),
+  );
+}
