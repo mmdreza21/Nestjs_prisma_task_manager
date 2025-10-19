@@ -49,11 +49,13 @@ It provides an extensible foundation for building secure and scalable full-stack
 Includes support for unit tests, end-to-end tests, and coverage reports.
 
 ---
-
 ## 🤝 Integration with Nuxt 3
 
 This backend is designed for smooth integration with a Nuxt 3 frontend.  
+You can explore a working Nuxt 3 frontend example in this companion repository: [nuxt3_task_manager](https://github.com/mmdreza21/nuxt3_task_manager)
+
 Use Nuxt’s composables to call APIs with authentication headers and structured endpoints.
+
 
 ---
 
@@ -78,7 +80,6 @@ This project is MIT licensed.
 
 ## 🧑‍💻 Author
 
-- Developer: [@mmdvarlog](https://github.com/mmdvarlog)
 - Framework: NestJS
 - Frontend Integration: Nuxt 3
 - Database: Prisma ORM
