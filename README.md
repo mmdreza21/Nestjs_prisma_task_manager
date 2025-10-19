@@ -78,10 +78,4 @@ This project is MIT licensed.
 
 ---
 
-## 🧑‍💻 Author
-
-- Framework: NestJS
-- Frontend Integration: Nuxt 3
-- Database: Prisma ORM
-
 A fast, modular backend ready to power your modern Nuxt + Nest stack.
