@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class NoteService {
   constructor(private prisma: PrismaService) {}
 
   // Create a new note
-  async create(data: { title: string; content: string }) {
+  async create(data: Prisma.NoteCreateInput) {
     return this.prisma.note.create({ data });
   }
 

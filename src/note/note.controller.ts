@@ -13,25 +13,26 @@ import {
   CommonSwaggerPost,
 } from 'src/common/decorators/common-swagger.decorator';
 import { ApiTags } from '@nestjs/swagger';
+import { UpdateNoteDto } from './dto/update-note.dto';
+import { CreateNoteDto } from './dto/create-note.dto';
 
 @ApiTags('Notes (Public)')
 @Controller('notes')
 export class NoteController {
   constructor(private readonly noteService: NoteService) {}
 
+  @Post()
   @CommonSwaggerPost({
     summary: 'Create a new note (public)',
-    description: 'Allows anyone to create a note without authentication.',
+    description: '',
   })
-  @Post()
-  create(@Body() body: { title: string; content: string }) {
+  create(@Body() body: CreateNoteDto) {
     return this.noteService.create(body);
   }
 
   @CommonSwaggerGetNoAuth({
     summary: 'Get all notes (public)',
-    description:
-      'Fetch all notes from the database — no authentication required.',
+    description: 'Fetch all notes from the database .',
   })
   @Get()
   findAll() {
@@ -49,19 +50,16 @@ export class NoteController {
 
   @CommonSwaggerPost({
     summary: 'Update note (public)',
-    description: 'Edit a note by ID — no authentication required.',
+    description: 'Edit a note by ID .',
   })
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() body: { title?: string; content?: string },
-  ) {
+  update(@Param('id') id: string, @Body() body: UpdateNoteDto) {
     return this.noteService.update(id, body);
   }
 
   @CommonSwaggerPost({
     summary: 'Delete note (public)',
-    description: 'Delete a note by its ID — no authentication required.',
+    description: 'Delete a note by its ID .',
   })
   @Delete(':id')
   remove(@Param('id') id: string) {
