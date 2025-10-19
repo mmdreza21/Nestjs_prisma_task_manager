@@ -10,13 +10,18 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/users/users.service';
+import { UserDTO } from 'src/users/dto/user.dto';
+import { plainToInstance } from 'class-transformer';
+import { ObjectId } from 'bson';
 
 @WebSocketGateway({ cors: true })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  private onlineUsers: Map<string, string> = new Map(); // userId -> socketId
+  // userId -> socketId[]
+  private userSockets: Map<string | ObjectId, Set<string>> = new Map();
+  private onlineUsers: Map<string | ObjectId, UserDTO> = new Map(); // userId -> user
 
   constructor(
     private readonly jwtService: JwtService,
@@ -32,41 +37,62 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const user = await this.usersService.findOneUser('id', payload.userId);
       if (!user) return client.disconnect();
 
-      this.onlineUsers.set(user.id, client.id);
-      console.log(`User connected: ${user.email}`);
+      const safeUser = plainToInstance(UserDTO, user, {
+        excludeExtraneousValues: true,
+      });
+
+      // ✅ If user already connected from another tab, just add new socket
+      if (!this.userSockets.has(user.id)) {
+        this.userSockets.set(user.id, new Set());
+        this.onlineUsers.set(user.id, safeUser);
+      }
+      this.userSockets.get(user.id)!.add(client.id);
+
+      // 👇 Broadcast user count (unique users)
+      this.server.emit('userCount', this.onlineUsers.size);
+
+      console.log(`✅ User connected: ${user.email}`);
+      console.log('👥 Online users:', this.onlineUsers.size);
     } catch (err) {
-      console.log('Socket connection failed', err);
+      console.log('❌ Socket connection failed', err);
       client.disconnect();
     }
   }
 
   handleDisconnect(client: Socket) {
-    for (const [userId, socketId] of this.onlineUsers.entries()) {
-      if (socketId === client.id) {
-        this.onlineUsers.delete(userId);
-        console.log(`User disconnected: ${userId}`);
+    for (const [userId, sockets] of this.userSockets.entries()) {
+      if (sockets.has(client.id)) {
+        sockets.delete(client.id);
+
+        // 🧹 If no more sockets for this user, remove user from online list
+        if (sockets.size === 0) {
+          this.userSockets.delete(userId);
+          this.onlineUsers.delete(userId);
+        }
         break;
       }
     }
+
+    // 👇 Broadcast updated unique user count
+    this.server.emit('userCount', this.onlineUsers.size);
+    console.log('👥 Online users:', this.onlineUsers.size);
   }
 
+  // 📨 Broadcast message to everyone
   @SubscribeMessage('message')
-  async handleMessage(
-    @MessageBody() data: { to: string; message: string },
+  handleMessage(
+    @MessageBody() data: { message: string; from: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const senderId = Array.from(this.onlineUsers.entries()).find(
-      ([, socketId]) => socketId === client.id,
-    )?.[0];
+    const sender = [...this.onlineUsers.values()].find((u) =>
+      this.userSockets.get(u.id)?.has(client.id),
+    );
 
-    if (!senderId) return;
+    if (!sender) return;
 
-    const recipientSocketId = this.onlineUsers.get(data.to);
-    if (recipientSocketId) {
-      this.server.to(recipientSocketId).emit('message', {
-        from: senderId,
-        message: data.message,
-      });
-    }
+    this.server.emit('message', {
+      message: data.message,
+      from: sender,
+    });
   }
 }
